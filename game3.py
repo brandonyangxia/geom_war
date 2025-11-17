@@ -10,7 +10,6 @@ DMG_BORDER = (0,0,0)
 UNIT_PADDING = 50
 MIN_UNIT_DIST = 60
 
-# ================= HELPERS =================
 def regular_polygon(radius, sides):
     return [(math.cos(2*math.pi*i/sides)*radius, math.sin(2*math.pi*i/sides)*radius)
             for i in range(sides)]
@@ -27,10 +26,7 @@ def random_position(team, existing_units):
     return pos
 
 def instantiate(formation, team, inventory, wrld):
-        """
-        Turn UnitData objects into battle-ready Unit objects.
-        Requires you to have a Unit() and behaviors like ShooterBehavior/HealerBehavior.
-        """
+        # Turns UnitData objects into objects ready for battle
         formation.validate(inventory)
         world=wrld
         units = []
@@ -51,10 +47,7 @@ def instantiate(formation, team, inventory, wrld):
         return units
 
 def instantiatedummy(formation, team, inventory, wrld):
-        """
-        Turn UnitData objects into battle-ready Unit objects.
-        Requires you to have a Unit() and behaviors like ShooterBehavior/HealerBehavior.
-        """
+        # Turns UnitData objects into dummies that do not shoot
         formation.validate(inventory)
         world=wrld
         units = []
@@ -73,7 +66,8 @@ def instantiatedummy(formation, team, inventory, wrld):
             units.append(u)
 
         return units
-# ================= UNIT =================
+
+
 class Unit:
     def __init__(self, team, pos, sides, behavior, hp=100, rotation_speed=30):
         self.team = team
@@ -99,7 +93,7 @@ class Unit:
         if self.behavior != None:
             self.behavior.update(self, dt, world)
         self.pos += self.vel*dt
-        # Bounce walls
+        # Bounce off walls
         if self.pos.x<0: self.pos.x=0; self.vel.x*=-1
         if self.pos.x>WIDTH: self.pos.x=WIDTH; self.vel.x*=-1
         if self.pos.y<0: self.pos.y=0; self.vel.y*=-1
@@ -122,17 +116,15 @@ class Unit:
         return corner
     
     def draw_hp_bar(screen, pos, hp, max_hp):
-    # Fixed width scaling: 50px at 100 hp
         base_length = 50
-        length = int(base_length * (hp / 100))  # grows proportionally
+        length = int(base_length * (hp / 100))
         height = 6
 
-    # Center horizontally at unit pos
         x = pos[0] - length // 2
-        y = pos[1] + 40  # offset below unit
+        y = pos[1] + 40 
 
-        pygame.draw.rect(screen, (100, 0, 0), (x, y, base_length, height))  # background
-        pygame.draw.rect(screen, (0, 200, 0), (x, y, length, height))      # filled
+        pygame.draw.rect(screen, (100, 0, 0), (x, y, base_length, height)) 
+        pygame.draw.rect(screen, (0, 200, 0), (x, y, length, height))
 
 
     def draw(self, surf):
@@ -142,34 +134,27 @@ class Unit:
         # draw the unit shape
         pygame.draw.polygon(surf, self.color, self.get_corners())
 
-        # draw fixed HP bar
+        # draw HP bar
         self.draw_hp_bar(surf)
 
     def draw_hp_bar(self, surf):
-        # Ensure the unit has max_hp (set this in __init__)
-        max_length_per_100 = 30  # how long the bar should be at 100 max hp
+        max_length_per_100 = 30  # default bar length, height
         bar_h = 4
     
-        # length scales with max_hp
         base_length = int(max_length_per_100 * (self.max_hp / 100))
         filled_length = int(base_length * (self.hp / self.max_hp))
     
-        cx, cy = self.pos  # unit center
-    
-        # place bar under the unit
+        cx, cy = self.pos
+        # place bar under the unit center
         x = cx - base_length // 2
         y = cy + 5
     
-        # draw background
         pygame.draw.rect(surf, (100, 0, 0), (x, y, base_length, bar_h))
-        # draw filled portion
         pygame.draw.rect(surf, (0, 200, 0), (x, y, filled_length, bar_h))
-        # border
         pygame.draw.rect(surf, (0, 0, 0), (x, y, base_length, bar_h), 1)
 
 
 
-# ================= PROJECTILE =================
 class Projectile:
     def __init__(self, team, pos, damage=10, speed=100, acceleration = 200,
                  healing=False, defensive=False, lifetime=3.0, source_type='triangle'):
@@ -191,7 +176,6 @@ class Projectile:
         self.init_vel=speed
         self.initialized=False
         self.iframes=0.5
-        # Low max speed, high acceleration
 
     def reflect_ip(self, normal):
         self.vel = self.vel - 2*self.vel.dot(normal)*normal
@@ -201,7 +185,7 @@ class Projectile:
         if self.iframes >= 0:
             self.iframes -= dt
 
-        # ================= DEFENSIVE (Square) =================
+        # For square projectiles only
         if self.defensive:
             self.lifetime -= dt
             if self.lifetime <= 0:
@@ -213,7 +197,6 @@ class Projectile:
             for kind in priority:
                 kind_projs=[p for p in enemy_projs if p.source_type==kind]
                 if kind_projs: target=min(kind_projs,key=lambda e:e.pos.distance_to(self.pos)); break
-            # Initial velocity away from corner
             if not self.initialized:
                 self.vel=pygame.Vector2(0,-1)*self.init_vel
                 self.initialized=True
@@ -248,7 +231,7 @@ class Projectile:
                         p.alive = False
                         return
                     p.alive=False
-            # Bounce walls
+            # Bounce off walls
             if self.pos.x<0 or self.pos.x>WIDTH: self.vel.x*=-1; self.pos.x=max(0,min(WIDTH,self.pos.x))
             if self.pos.y<0 or self.pos.y>HEIGHT: self.vel.y*=-1; self.pos.y=max(0,min(HEIGHT,self.pos.y))
             # Bounce off all units
@@ -262,7 +245,7 @@ class Projectile:
                     self.pos+=offset.normalize()*(radius-dist)
             return
 
-        # ================= HOMING (Triangle/Healer) =================
+        # Other projectiles
         if self.source_type=='triangle':
             enemies=[u for u in world.units if u.team!=self.team and u.alive]
             if enemies: self.target=min(enemies,key=lambda e:e.pos.distance_to(self.pos))
@@ -286,16 +269,16 @@ class Projectile:
             if self.healing and u.team==self.team: can_hit=True
             elif not self.healing and u.team!=self.team: can_hit=True
             elif self.defensive: can_hit=False
-            # Special: triangle projectiles damage enemy units
+            # Triangle projectiles
             if self.source_type=='triangle' and u.team!=self.team and dist<radius:
                 u.hp-=self.damage
                 if u.hp<=0: u.alive=False
                 self.alive=False
-            # Healer bounces off enemy units
+            # Pentagon projectiles
             elif not can_hit and dist<radius:
                 self.reflect_ip(offset.normalize())
                 self.pos+=offset.normalize()*(radius-dist)
-            # Healer heals and dies on friendly units
+            # Pentagon projectile heals and dies on friendly units
             elif self.healing and u.team==self.team and dist<radius:
                 if self.iframes <= 0:
                     u.hp=min(u.max_hp,u.hp+self.damage)
@@ -318,7 +301,7 @@ class Projectile:
             self.initialized=True
 
         # Accelerate and move with turning limit
-        max_turn = math.radians(1800) * dt  # max turn per frame, tweak as needed
+        max_turn = math.radians(1800) * dt
 
         # Only apply if current velocity is nonzero
         if self.vel.length() > 0.01:
@@ -364,7 +347,7 @@ class Projectile:
                 self.pos+=normal*(overlap/2)
                 other.pos-=normal*(overlap/2)
 
-        # Bounce walls
+        # Bounce off walls
         if self.pos.x<0 or self.pos.x>WIDTH: self.vel.x*=-1; self.pos.x=max(0,min(WIDTH,self.pos.x))
         if self.pos.y<0 or self.pos.y>HEIGHT: self.vel.y*=-1; self.pos.y=max(0,min(HEIGHT,self.pos.y))
 
@@ -385,7 +368,7 @@ class Projectile:
             pygame.draw.polygon(surf,self.color,rotated)
             pygame.draw.polygon(surf,border_color,rotated,2)
 
-# ================= BEHAVIORS =================
+# For determining unit behaviors
 class ShooterBehavior:
     def __init__(self, atk=10, rate=1.0, defensive=False, lifetime = 3.0, proj_speed=100, acceleration = 200):
         self.atk=atk
@@ -425,7 +408,7 @@ class HealerBehavior:
         world.projectiles.append(proj)
         self.cooldown=self.rate
 
-# ================= WORLD =================
+# Battle arena
 class World:
     def __init__(self):
         self.units=[]
