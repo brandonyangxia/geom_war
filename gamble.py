@@ -16,15 +16,12 @@ class GachaBanner:
         return unit
 
     def _draw_level(self):
-        """Geometric distribution with P(0)=0.1, P(n)=0.9*P(n-1)."""
         level = 0
         while random.random() < 0.9:
             level += 1
         return level
 
     def _random_partition(self, total, length):
-        """Distribute 'total' levels randomly across 'length' stats, 
-        each level choosing a stat independently."""
         parts = [0] * length
         for _ in range(total):
             idx = random.randrange(length)
@@ -32,7 +29,6 @@ class GachaBanner:
         return parts
 
     def _grade_from_level(self, level):
-        """Map numeric level to grade string with +/- tags."""
         grades = ["F-","F","F+","E-","E","E+","D-","D","D+","C-","C","C+","B-","B","B+","A-","A","A+","S-","S","S+","SS-","SS","SS+","SSS-","SSS","SSS+","U-","U","U+"]
         if level < len(grades):
             base = grades[level]
