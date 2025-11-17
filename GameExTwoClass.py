@@ -2,7 +2,6 @@ import math, uuid, json, random
 
 
 def gfroml(level):
-    """Map numeric level to grade string with +/- tags."""
     grades = ["F-","F","F+","E-","E","E+","D-","D","D+","C-","C","C+","B-","B","B+","A-","A","A+","S-","S","S+","SS-","SS","SS+","SSS-","SSS","SSS+","U-","U","U+"]
     if level < len(grades):
         base = grades[level]
@@ -39,8 +38,6 @@ class UnitData:
             unit = Pentagon(level=data["level"], letterrank=data["letterrank"], lvlVec=data["lvlVec"])
         else:
             raise ValueError(f"Unknown unit type {unit_type}")
-    
-        # restore hp if you decided to save it
         if "hp" in data:
             unit.hp = data["hp"]
     
@@ -53,11 +50,11 @@ class Triangle(UnitData):
         if lvlVec is None: lvlVec = [0,0,0,0,0]
         self.level = level
         self.lvlVec = lvlVec
-        self.damage = damage + lvlVec[1]         # +1 per dmg level
-        self.speed = speed + 5*lvlVec[2]         # +5 per speed level
+        self.damage = damage + lvlVec[1]
+        self.speed = speed + 5*lvlVec[2]
         self.acceleration = acceleration + 10*lvlVec[3]
-        self.rate = rate * (0.9**lvlVec[4])      # faster firing
-        self.hp += 10*lvlVec[0]                  # +10 hp per lvl
+        self.rate = rate * (0.9**lvlVec[4])
+        self.hp += 10*lvlVec[0]
     
     def upgrade(self):
         choice = random.choice(['dmg', 'spd', 'acc', 'rate', 'hp'])
@@ -179,12 +176,9 @@ class Pentagon(UnitData):
         }
 
 
-#___________________________________________________________________________________________
-
-
 class Inventory:
     def __init__(self, capacity = 200):
-        self.units = {}  # key: unit_id, value: unit instance
+        self.units = {}  # {unit_id: unit instance}
         self.capacity = capacity
         self.cap = 600
     
@@ -197,7 +191,7 @@ class Inventory:
     def add_unit(self, unit):
         if self.isfull():
             return
-        unit_id = str(uuid.uuid4())  # give each unit a unique ID
+        unit_id = str(uuid.uuid4())
         self.units[unit_id] = unit
         return unit_id
 
@@ -253,7 +247,6 @@ class Formation:
         self.slots[unit_id] = pos
 
     def slots_to_dict(self):
-        # make a safe copy with plain tuples
         slotcopy = {}
         for uid, pos in self.slots.items():
             slotcopy[uid] = (pos.x, pos.y) if isinstance(pos, pygame.Vector2) else tuple(pos)
@@ -265,7 +258,6 @@ class Formation:
     @classmethod
     def from_dict(cls, data):
         f = cls(data["name"])
-        # convert back into Vector2 objects
         f.slots = {uid: pygame.Vector2(*pos) for uid, pos in data["slots"].items()}
         return f
 
