@@ -34,7 +34,7 @@ def draw_unit_icon(surface, rect, unit, font):
       - rect: pygame.Rect area to draw in
       - unit: UnitData instance (Triangle/Square/Pentagon)
     """
-    cx = rect.x + rect.w // 2 - 4  # a bit left so text on right fits
+    cx = rect.x + rect.w // 2 - 4 
     cy = rect.y + rect.h // 2 + 2
     radius = min(rect.w, rect.h) * 0.45
     # determine sides
@@ -52,7 +52,7 @@ def draw_unit_icon(surface, rect, unit, font):
     pygame.draw.polygon(surface, color, pts)
     pygame.draw.polygon(surface, (0,0,0), pts, 2)
 
-    # draw letter rank inside shape (fallbacks: letterrank -> rank -> grade)
+    # draw letter rank inside shape
     rank_text = getattr(unit, "letterrank", None) or getattr(unit, "rank", None) or getattr(unit, "grade", None) or ""
     if rank_text is not None:
         # draw small text centered on polygon
@@ -75,7 +75,7 @@ class RespawnBattleSim:
                 behavior = ShooterBehavior(defensive=True,lifetime=5,proj_speed=150,acceleration=350)
             else:
                 behavior = HealerBehavior(rate=7,acceleration=100)
-            u = Unit(0, random_position(0,self.team0),shape,behavior=behavior, rotation_speed=30)  # use your real Unit class
+            u = Unit(0, random_position(0,self.team0),shape,behavior=behavior, rotation_speed=30)
             self.team0.append(u)
             self.world.units.append(u)
 
@@ -86,12 +86,11 @@ class RespawnBattleSim:
                 behavior = ShooterBehavior(defensive=True,lifetime=5,proj_speed=150,acceleration=350)
             else:
                 behavior = HealerBehavior(rate=7,acceleration=100)
-            u = Unit(1, random_position(1,self.team1),shape,behavior=behavior,rotation_speed=30)  # use your real Unit class
+            u = Unit(1, random_position(1,self.team1),shape,behavior=behavior,rotation_speed=30)
             self.team1.append(u)
             self.world.units.append(u)
 
     def update(self, dt):
-        # let real battle logic run
         self.world.update(dt)
 
         # respawn instead of removing
@@ -121,7 +120,7 @@ class CampaignState:
         self.enemyuid = []
         self.enemypos = []
         self.enemy_inventory = Inventory()
-        self.enemy_formation = Formation('Enemy Team') # list of (unit, position)
+        self.enemy_formation = Formation('Enemy Team')
         pos = self._random_enemy_position()
         self.enemypos.append(pos)
         self.enemyuid.append(self.enemy_inventory.add_unit(Triangle()))
@@ -148,11 +147,11 @@ class CampaignState:
         if existing is None: existing = []
         while True:
             pos = pygame.Vector2(random.randint(500, 750), random.randint(100, 500))
-            if all(pos.distance_to(e) > 40 for e in existing):  # no overlap
+            if all(pos.distance_to(e) > 40 for e in existing):  # No overlapping
                 return pos
 
     def _make_enemy(self, unit_type, level):
-        # Factory that creates enemy units at a given base level
+        # Creates enemy units at a given base level
         if unit_type == "triangle":
             u = self.enemy_inventory.add_unit(Triangle())
             return u
@@ -164,7 +163,7 @@ class CampaignState:
             return u
 
     def reward(self):
-        """Gold reward for clearing current level."""
+        # Level clear reward
         return 50 + (self.level // 10) * 10
     
     def pos_to_tuple(self):
@@ -187,17 +186,9 @@ class CampaignState:
     def from_dict(cls, data):
         obj = cls.__new__(cls)
         obj.level = data.get("level", 1)
-    
-        # rebuild inventory
         obj.enemy_inventory = Inventory.from_dict(data["enemy_inventory"], 200)
-    
-        # rebuild formation
         obj.enemy_formation = Formation.from_dict(data["enemy_formation"])
-    
-        # rebuild positions
         obj.enemypos = [pygame.Vector2(*pos) for pos in data["enemypos"]]
-    
-        # rebuild uid list – make sure they exist in the inventory
         obj.enemyuid = []
         for uid in data["enemyuid"]:
             if uid in obj.enemy_inventory.units:
@@ -205,7 +196,7 @@ class CampaignState:
     
         return obj
     
-# ---------- small Button helper ----------
+# Button helper function
 class Button:
     def __init__(self, rect, text, callback, transparent = False):
         self.rect = pygame.Rect(rect)
@@ -215,19 +206,14 @@ class Button:
         self.transparent = transparent
 
     def draw(self, surf, font):
-    # choose background color
         base_color = (200, 200, 200) if self.active else (110, 110, 110)
     
         if self.transparent:
-            # make a temporary semi-transparent surface
             temp = pygame.Surface(self.rect.size, pygame.SRCALPHA)
-            temp.fill((*base_color, 150))  # last number = alpha (0-255)
+            temp.fill((*base_color, 150)) 
             surf.blit(temp, self.rect.topleft)
         else:
-            # normal solid rectangle
             pygame.draw.rect(surf, base_color, self.rect)
-    
-        # always draw border
         pygame.draw.rect(surf, (0, 0, 0), self.rect, 2)
     
         # text
@@ -259,7 +245,6 @@ class SaveMenu:
             self.slot_buttons.append(slot_btn)
             self.delete_buttons.append(delete_btn)
 
-        # Exit button
         exit_rect = (200, 400, 420, 60)
         self.exit_btn = Button(exit_rect, "Exit Game", self.exit_game)
 
@@ -512,7 +497,7 @@ class BannerDetailScene(Scene):
         return self.manager.economy.gold >= cost
     
     def has_space(self, mode):
-        pulls = int(mode[1:])  # e.g. "x10" -> 10
+        pulls = int(mode[1:])
         return self.inventory.has_space_for(pulls)
     
     def go_back(self):
@@ -552,7 +537,7 @@ class SummonResultScene(Scene):
         self.buttons = []
         self.timer = 0
         self.animation_time = 0
-        self.unit_pos = pygame.Vector2(400, 300)  # centered properly
+        self.unit_pos = pygame.Vector2(400, 300)
         self.blobs = []
         self.absorbed = 0
         self.unit = None
@@ -577,7 +562,6 @@ class SummonResultScene(Scene):
             self._init_params_for_rank()
             self._init_special_effects()
 
-    # ---------- Rank → Level Conversion ----------
     def _rank_to_level(self, rank: str):
         """Converts rank string to numeric level value."""
         base_table = {
@@ -587,11 +571,9 @@ class SummonResultScene(Scene):
             "S-": 18, "S": 19, "S+": 20, "SS-": 21, "SS": 22, "SS+": 23,
             "SSS-": 24, "SSS": 25, "SSS+": 26, "U-": 27, "U": 28, "U+": 29,
         }
-        # Base level + 30 per L
         base = base_table.get(rank[-2:], 0)
         return base + 30 * rank.count("L")
-
-    # ---------- Summon ----------
+ 
     def _do_summon(self):
         pulls = []
         n = {"single": 1, "x10": 10, "x100": 100, "max": 999999}.get(self.mode, 1)
@@ -603,8 +585,7 @@ class SummonResultScene(Scene):
         for u in pulls:
             self.result_uids.append(self.inventory.add_unit(u))
         self.result_units = pulls
-
-    # ---------- Rarity parameters ----------
+ 
     def _init_params_for_rank(self):
         rank = self.unit.letterrank.upper()
         self.tier = rank.count("L")
@@ -621,13 +602,12 @@ class SummonResultScene(Scene):
     def _init_special_effects(self):
         if self.tier >= 4:
             for _ in range(60):
-                x = 400 #random.randint(0, 800)
-                y = 300 #random.randint(0, 600)
+                x = 400 
+                y = 300
                 speed = random.uniform(5, 120)
                 direction = random.uniform(0,360)
                 self.stars.append({"pos": pygame.Vector2(x, y), "speed": speed, "direction": direction})
 
-    # ---------- Update ----------
     def update(self, dt):
         if self.phase == "summon":
             self.spawn_timer += dt
@@ -652,7 +632,7 @@ class SummonResultScene(Scene):
         elif self.phase == "reveal" and self.tier >= 4:
             self._update_stars(dt)
 
-    # ---------- Blob spawning ----------
+    # Spawn inward moving blobs
     def _spawn_blob(self):
         side = random.choice(["top", "bottom", "left", "right"])
         if side == "top":
@@ -672,7 +652,7 @@ class SummonResultScene(Scene):
             "burst": False
         })
 
-    # ---------- Blob motion ----------
+    # Blob motion
     def _update_blobs(self, dt):
         for b in list(self.blobs):
             direction = self.unit_pos - b["pos"]
@@ -702,7 +682,7 @@ class SummonResultScene(Scene):
                     b["pos"].y < -5 or b["pos"].y > 605):
                     self.blobs.remove(b)
 
-    # ---------- Background stars ----------
+    # Background stars 
     def _update_stars(self, dt):
         for s in self.stars:
             radians = math.radians(s["direction"])
@@ -720,19 +700,17 @@ class SummonResultScene(Scene):
         if self.tier >= 4:
             self._update_stars(dt)
         self.accelfactor += 1
-        # Gradually accelerate rotation and growth
         self.shape_rot_speed += 0.2 * dt * self.accelfactor  # acceleration of spin
         self.shape_growth_speed += 3 * dt * self.accelfactor # acceleration of size
         self.shape_angle += self.shape_rot_speed * dt * 120
         self.shape_scale += self.shape_growth_speed * dt * 0.5
 
-        # When shape exceeds bounds, switch to reveal
+        # Reveal
         if self.shape_scale > 22.0:
             self.phase = "reveal"
             self.expanding = False
             self._build_buttons()
 
-    # ---------- Draw ----------
     def draw(self, screen):
         # Determine effects from absorbed count
         absorbed = self.absorbed
@@ -749,7 +727,7 @@ class SummonResultScene(Scene):
             self.b = 0
 
         if self.bg_glow:
-            # Fade color safely
+            # Fade background color
             r = max(0, min(255, 200 - self.r))
             g = max(0, min(255, 170 - self.g))
             b = max(0, min(255, self.b))
@@ -760,7 +738,7 @@ class SummonResultScene(Scene):
                 self.g += 3.3
                 self.b += 0.3
                 if self.r >= 190:
-                    self.r = 190  # clamp
+                    self.r = 190 
                     self.bg_glow = False
         else:
             screen.fill((5, 5, 15))
@@ -792,7 +770,6 @@ class SummonResultScene(Scene):
         else:
             self._draw_result(screen)
 
-    # ---------- Draw center shape ----------
     def _draw_center_shape(self, screen):
         pos = self.unit_pos
         base_size = 60
@@ -808,7 +785,6 @@ class SummonResultScene(Scene):
             pygame.draw.polygon(screen, glow_color, pts, width=3)
     
         elif self.name == "square":
-            # Rotate 4 corners
             pts = []
             for i in range(4):
                 angle = math.radians(45 + i * 90 + angle_offset)
@@ -825,7 +801,6 @@ class SummonResultScene(Scene):
         else:
             pygame.draw.circle(screen, glow_color, pos, size, width=3)
 
-    # ---------- Tetragonal star ----------
     def draw_tetragonal_star(self, screen, pos, size, color):
         cx, cy = pos
         points = []
@@ -838,7 +813,6 @@ class SummonResultScene(Scene):
         gfxdraw.aapolygon(screen, points, color)
         gfxdraw.filled_polygon(screen, points, color)
 
-    # ---------- Result ----------
     def _draw_result(self, screen):
         u = self.unit
         try:
@@ -873,63 +847,6 @@ class SummonResultScene(Scene):
         self.manager.switch(BannerScene(self.manager, self.manager.gacha, self.inventory))
 
 
-
-
-
-#class BannerScene(Scene):
-#    def __init__(self, manager, gacha_systems, inventory):
-#        self.manager = manager
-#        self.gacha_systems = gacha_systems  # dict of banners
-#        self.inventory = inventory
-#        self.last_pull = None
-#        self.options = list(gacha_systems.keys())
-#        self.selected = 0
-#        self.enoughfunds = True
-#
-#    def handle_event(self, event):
-#        if event.type == pygame.KEYDOWN:
-#            if event.key == pygame.K_DOWN:
-#                self.selected = (self.selected + 1) % len(self.options)
-#            elif event.key == pygame.K_UP:
-#                self.selected = (self.selected - 1) % len(self.options)
-#            elif event.key == pygame.K_RETURN:
-#                while self.manager.economy.spend(15) and not self.inventory.isfull():
-#                #if not self.manager.economy.spend(15):
-#                #    self.enoughfunds = False
-#                #    return
-#                #if self.inventory.isfull():
-#                #    self.manager.switch(InventoryFullScene(self.manager,self.inventory,self.manager.economy, self.gacha_systems))
-#                #    return
-#                    banner_name = self.options[self.selected]
-#                    banner = self.gacha_systems[banner_name]
-#                    unit = banner.draw_unit()
-#                    self.inventory.add_unit(unit)
-#                    self.last_pull = unit
-#                if self.inventory.isfull():
-#                    self.manager.switch(InventoryFullScene(self.manager,self.inventory,self.manager.economy, self.gacha_systems))
-#                return
-#            elif event.key == pygame.K_ESCAPE:
-#                self.manager.switch(MainMenu(self.manager, self.gacha_systems, self.inventory))
-#
-#    def draw(self, screen):
-#        screen.fill((0,0,0))
-#        font = pygame.font.SysFont(None, 36)
-#        screen.blit(font.render(f"Gold: {self.manager.economy.gold}", True, (255,215,0)), (660,26))
-#        txt = font.render("Choose banner (Enter to draw, Esc to return):", True, (255,255,255))
-#        screen.blit(txt, (50, 50))
-#        for i, name in enumerate(self.options):
-#            color = (255,255,0) if i == self.selected else (255,255,255)
-#            txt2 = font.render(name.capitalize() + " Banner", True, color)
-#            screen.blit(txt2, (50, 100 + i*40))
-#
-#        if self.last_pull:
-#            details = f"Pulled a {type(self.last_pull).__name__} of rank {self.last_pull.letterrank}"
-#            txt3 = font.render(details, True, (255,255,0))
-#            screen.blit(txt3, (50, 300))
-#        if not self.enoughfunds:
-#            screen.blit(pygame.font.SysFont(None, 100).render("Insufficient Gold!", True, (255,100,0)), (90,250))
-
-
 class InventoryFullScene(Scene):
     def __init__(self, manager, inventory, banner_name, banner):
         self.manager = manager
@@ -952,7 +869,7 @@ class InventoryFullScene(Scene):
             self.expand_btn.active = False
             return
         if self.inventory.expandcapacity(5, 10, self.manager.economy):
-            # successful expansion → back to gacha
+            # successful expansion >> back to gacha
             self.manager.switch(BannerDetailScene(self.manager, self.name, self.banner, self.inventory))
         else:
             # insufficient gold
@@ -993,7 +910,6 @@ class InventoryScene(Scene):
         self.sort_asc = False
         self.filter_idx = 0
         self.box_map = []    # list of tuples (uid, pygame.Rect)
-        # instructions for quick reference
         self.instructions = "Left-click: inspect. Right-click: mark/unmark for recycle. Wheel/Up/Down to scroll. S/O/F to sort/order/filter. ESC back."
 
         # recycling state
@@ -1008,15 +924,11 @@ class InventoryScene(Scene):
         self.auto_cutoff_level = None  # set when selecting a unit as cutoff
 
     def update(self, dt):
-        # no animation state to update here; required by Scene interface
         pass
 
-    # -------------------------
-    # recycling helpers
-    # -------------------------
     def recycle_value(self, unit):
         level = getattr(unit, "level", 0)
-        rank_count = level // 30   # integer division, each 30 levels = one rank
+        rank_count = level // 30   # each 30 levels = one rank
         return max(1, (level + 1) * (2 ** rank_count))
 
     def recycle_unit(self, uid):
@@ -1085,9 +997,6 @@ class InventoryScene(Scene):
         self.auto_preview_gold = 0
         self.auto_cutoff_level = None
 
-    # -------------------------
-    # sorting / filtering (unchanged)
-    # -------------------------
     def get_sorted_filtered_items(self):
         items = list(self.inventory.units.items())  # (uid, unit) pairs
 
@@ -1107,9 +1016,6 @@ class InventoryScene(Scene):
 
         return items
 
-    # -------------------------
-    # input handling (adds right-click selection and auto flow)
-    # -------------------------
     def handle_event(self, event):
         # return to main
         if event.type == pygame.KEYDOWN:
@@ -1180,13 +1086,10 @@ class InventoryScene(Scene):
             elif event.button == 5:  # wheel down
                 self.scroll += 1
 
-        # let buttons handle events too (buttons are at top)
+        # let buttons handle events too
         self.recycle_btn.handle_event(event)
         self.auto_btn.handle_event(event)
 
-    # -------------------------
-    # draw (keeps your layout and adds highlights / buttons)
-    # -------------------------
     def draw(self, screen):
         screen.fill((40, 40, 60))
         title = self.bigfont.render(f"Inventory ({len(self.inventory.units)}/{self.inventory.capacity})", True, (255,255,255))
@@ -1229,7 +1132,6 @@ class InventoryScene(Scene):
 
         # how many rows fit on screen
         rows_visible = max(1, (screen.get_height() - top) // (box_h + pad))
-        # clamp scroll
         max_rows = max(0, math.ceil(len(items) / cols) - rows_visible)
         self.scroll = min(self.scroll, max_rows)
 
@@ -1300,7 +1202,6 @@ class InventoryScene(Scene):
             screen.blit(self.font.render(preview_txt, True, (200,200,200)), (popup.x + 8, popup.y + 40))
 
 
-# ---------- UnitDetailScene ----------
 class UnitDetailScene(Scene):
     PREVIEW_RECT = pygame.Rect(40, 80, 360, 420)  # left half preview
     def __init__(self, manager, inventory, uid, economy):
@@ -1375,7 +1276,7 @@ class UnitDetailScene(Scene):
 
     def recycle_value(self):
         level = getattr(self.unit_data, "level", 0)
-        rank_count = level // 30   # integer division, each 30 levels = one rank
+        rank_count = level // 30
         return max(1, (level + 1) * (2 ** rank_count))
 
     def recycle_unit(self):
@@ -1408,8 +1309,6 @@ class UnitDetailScene(Scene):
             f"{self.unit_data.__class__.__name__} - Rank {self.unit_data.letterrank}",
             True, (255,255,255)), (right_x, 100))
 
-        # Stats display (same as before)...
-        # [snip your lines code]
         lines = []
         if hasattr(self.unit_data, "lvlVec"):
             lvlVec = self.unit_data.lvlVec
@@ -1434,7 +1333,7 @@ class UnitDetailScene(Scene):
                 f"Rate: {getattr(self.unit_data,'rate',1.0):.2f} ({lvlVec[3] if lvlVec else 0})",
                 f"Lifetime: {getattr(self.unit_data,'lifetime',3.0)} ({lvlVec[4] if lvlVec else 0})",
             ]
-        else:  # pentagon/healer
+        else:  
             lines = [
                 f"HP: {getattr(self.unit_data,'hp',100)} ({lvlVec[0] if lvlVec else 0})",
                 f"Heal: {getattr(self.unit_data,'heal',8)} ({lvlVec[1] if lvlVec else 0})",
@@ -1454,8 +1353,6 @@ class UnitDetailScene(Scene):
         screen.blit(self.font.render("ESC: back", True, (180,180,180)), (right_x, 360))
 
 
-# reuse draw_unit_icon and render_multiline helpers from earlier
-
 class FormationScene(Scene):
     MAP_RECT = pygame.Rect(20, 20, 360, 560)   # left area - player half style
     INV_LEFT = 420
@@ -1474,7 +1371,7 @@ class FormationScene(Scene):
         self.font = pygame.font.SysFont(None, 20)
         self.bigfont = pygame.font.SysFont(None, 26)
 
-        # placed units: uid -> pygame.Vector2(x,y)
+        # placed units: uid >> pygame.Vector2(x,y)
         # Initialize from formation.slots if it already has pixel positions
         self.placed = {}
         for uid, pos in self.formation.slots.items():
@@ -1501,7 +1398,6 @@ class FormationScene(Scene):
     def get_sorted_filtered_items(self):
         items = list(self.inventory.units.items())
 
-        # filter: reuse same options as InventoryScene (assume present)
         fil = InventoryScene.FILTER_OPTIONS[self.filter_idx]
         if fil:
             lower = fil.lower()
@@ -1526,10 +1422,8 @@ class FormationScene(Scene):
     
 
     def sync_with_inventory(self):
-        """
-        Remove any placed UIDs that no longer exist in inventory.units.
-        Keeps self.placed, self.inventory_locked, and formation.slots consistent.
-        """
+        # Remove any placed UIDs that no longer exist in inventory.units.
+        # Keeps self.placed, self.inventory_locked, and formation.slots consistent.
         if not hasattr(self.inventory, "units"):
             return
 
@@ -1550,15 +1444,11 @@ class FormationScene(Scene):
         self.warning_time = time.time()
 
     def unit_count(self):
-        """Count only placed units that still exist in the inventory."""
         return sum(1 for uid in self.placed.keys() if uid in getattr(self.inventory, "units", {}))
 
 
 
     def is_overlap(self, pos, ignore_uid=None):
-        """Return True if pos (Vector2) would overlap any placed unit other than ignore_uid.
-           Ignores placed UIDs that are no longer in inventory.
-        """
         for uid, p in self.placed.items():
             if uid == ignore_uid:
                 continue
@@ -1569,9 +1459,6 @@ class FormationScene(Scene):
         return False
 
     def pick_placed_uid_at(self, pos):
-        """Return uid of placed unit under pos (center distance < radius), else None.
-           Ignores missing units.
-        """
         # iterate reversed so the most recently-placed get priority
         for uid, p in reversed(list(self.placed.items())):
             if uid not in getattr(self.inventory, "units", {}):
@@ -1580,7 +1467,6 @@ class FormationScene(Scene):
                 return uid
         return None
 
-    # ---------- events ----------
     def handle_event(self, event):
         self.sync_with_inventory()
         if event.type == pygame.KEYDOWN:
@@ -1610,7 +1496,6 @@ class FormationScene(Scene):
             mpos = pygame.Vector2(mx,my)
             self.mouse_pos = mpos
 
-            # left-click begin drag from inventory box?
             if event.button == 1:
                 # check inventory boxes first
                 for idx, (uid, rect) in enumerate(self.get_inventory_box_rects()):
@@ -1624,7 +1509,7 @@ class FormationScene(Scene):
                         self.inventory_locked[uid] = True
                         return
 
-                # check if we clicked a placed unit: pick it up
+                # check if user clicked a placed unit: pick it up
                 if self.MAP_RECT.collidepoint(mx,my):
                     uid = self.pick_placed_uid_at(mpos)
                     if uid:
@@ -1634,7 +1519,7 @@ class FormationScene(Scene):
                         self.inventory_locked[uid] = True
                         return
 
-            # right click maybe drop back or cancel
+            # right click
             elif event.button == 3:
                 # cancel current drag
                 if self.dragging:
@@ -1659,14 +1544,12 @@ class FormationScene(Scene):
                 # if dropped inside map, test overlap
                 if self.world_pos_inside_map(drop_pos):
                     if self.unit_count() >= 8 and uid not in self.placed:
-                        # already at cap and this is a *new* unit
                         self.warning = "Unit cap reached!"
                         self.warning_time = time.time()
                         if from_inv:
                             self.inventory_locked[uid] = False
                         self.dragging = None
                         return
-                    # clamp inside map area
                     # ensure keep inside bounds with margin
                     margin = 16
                     x = max(self.MAP_RECT.left + margin, min(drop_pos.x, self.MAP_RECT.right - margin))
@@ -1721,7 +1604,6 @@ class FormationScene(Scene):
             elif event.y > 0:
                 self.scroll = max(0, self.scroll - 1)
 
-    # ---------- helpers for UI geometry ----------
     def get_inventory_box_rects(self):
         """Compute visible inventory box rects after sort/filter and scroll. Returns list of (uid, rect)."""
         items = self.get_sorted_filtered_items()
@@ -1731,8 +1613,6 @@ class FormationScene(Scene):
         for i, (uid, unit) in enumerate(items):
             y_i = y + (i - self.scroll) * (self.INV_BOX_H + 8)
             rect = pygame.Rect(x, y_i, self.INV_BOX_W, self.INV_BOX_H)
-
-            # only include boxes that fit between INV_TOP+40 and BIN_RECT.top-10
             if rect.bottom > 550: 
                 continue
             if rect.top < self.INV_TOP + 10: 
@@ -1749,12 +1629,10 @@ class FormationScene(Scene):
                     return True
         return False
 
-    # ---------- drawing ----------
     def draw(self, screen):
         self.sync_with_inventory()
         screen.fill((26,26,30))
         max_reached = self.unit_count() >= 8
-        # draw map area
         pygame.draw.rect(screen, (40,40,60), self.MAP_RECT)
         pygame.draw.rect(screen, (80,80,100), self.MAP_RECT, 2)
         screen.blit(self.bigfont.render("Placement Map", True, (220,220,220)), (self.MAP_RECT.left + 6, self.MAP_RECT.top + 6))
@@ -1942,24 +1820,20 @@ class BattleScene(Scene):
         )
         self.units = self.player_units + self.enemy_units
 
-    # --------- Button actions ----------
     def back_to_menu(self):
         self.manager.switch(
             MainMenu(self.manager, self.manager.gacha, self.manager.inventory)
         )
 
     def next_level(self):
-        # Advance here only when player clicks
         self.manager.switch(
             CampaignPreviewScene(self.manager, self.formation, self.campaign)
         )
 
-    # --------- Events ----------
     def handle_event(self, event):
         for btn in self.buttons:
             btn.handle_event(event)
 
-    # --------- Update ----------
     def update(self, dt):
         if not self.finished:
             self.world.update(dt)
@@ -1975,7 +1849,6 @@ class BattleScene(Scene):
             elif not alive_player:
                 self.finish_battle("lose")
 
-    # --------- Finish Battle ----------
     def finish_battle(self, result):
         self.finished = True
         self.result = result
@@ -2010,7 +1883,6 @@ class BattleScene(Scene):
             self.txt = font.render("Tie", True, (255, 255, 0))
             self.reward_txt = None
 
-    # --------- Draw ----------
     def draw(self, screen):
         screen.fill((0, 0, 0))
         self.world.draw(screen)
